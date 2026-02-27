@@ -1,6 +1,11 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocs from './swagger.js';
+
+import barberRoutes from './routes/barber.routes.js';
+import appointmentRoutes from './routes/appointment.routes.js';
 
 dotenv.config();
 
@@ -22,6 +27,14 @@ mongoose.connect(MONGO_URI)
     console.log('Mongo connected');
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Docs available at http://localhost:${PORT}/api-docs`);
     });
   })
   .catch(err => console.error(err));
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Endpoints
+app.use('/api/barbers', barberRoutes);
+app.use('/api/appointments', appointmentRoutes);
