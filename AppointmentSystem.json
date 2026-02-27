@@ -1,0 +1,145 @@
+{
+  "name": "AppointmentSystem",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dbc0c085-6f6a-430b-b8c9-89f2375f8627",
+      "name": "Webhook",
+      "webhookId": "a1514d72-5024-4200-a6bd-68a8999d8554"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst message = body.message || '';\nconst date = body.date || '';\n\n// Ver si es un comando para enviar recordatorios\nconst isReminder = message.toLowerCase().includes('send') || message.toLowerCase().includes('remind');\n\n// Si no es un recordatorio general, buscamos un nombre de barbero/cliente\nlet searchName = '';\nif (!isReminder) {\n  const words = message.split(' ');\n  const nameWords = words.filter(w => w.length > 2 && w[0] === w[0].toUpperCase() && isNaN(w[0]));\n  searchName = nameWords.join(' ');\n}\n\nreturn [{\n  json: {\n    date,\n    message,\n    searchName,\n    isReminder, \n    queryDate: date\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3ef81f8e-5112-4223-8664-26b14c07dda6",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/appointments",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=date",
+              "value": "={ $json.queryDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "dbdcf478-aefa-46b0-8eac-26448ab6316a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const apiResponse = $input.first().json.data || $input.first().json;\nconst searchName = $('Code in JavaScript').first().json.searchName || '';\nconst isReminder = $('Code in JavaScript').first().json.isReminder || false;\n\nlet answer = \"\";\n\n// Filtrar\nconst matchingAppointments = apiResponse.filter(apt => {\n  if (isReminder || !searchName) return true; // Si son recordatorios, traemos TODO lo de ese día\n  return apt.customerName.toLowerCase().includes(searchName.toLowerCase()) || \n         (apt.barberId && apt.barberId.name && apt.barberId.name.toLowerCase().includes(searchName.toLowerCase()));\n});\n\nif (matchingAppointments.length === 0) {\n  answer = \"No appointments found for the requested criteria.\";\n} \nelse if (isReminder) {\n  // B: Enviar recordatorios\n  answer = \"Reminders sent successfully for today's appointments:\\n\";\n  matchingAppointments.forEach(apt => {\n    const time = apt.start.split(' ')[1] || apt.start;\n    const barberName = apt.barberId?.name || 'Unknown barber';\n    answer += `- SMS sent to ${apt.customerName} (${apt.customerPhone}): \"Hi ${apt.customerName}, you have an appointment with ${barberName} at ${time}. See you soon!\"\\n`;\n  });\n} \nelse {\n  // A: Lista concisa\n  answer = \"Here is the list of appointments:\\n\";\n  matchingAppointments.forEach(apt => {\n    const time = apt.start.split(' ')[1] || apt.start;\n    const barberName = apt.barberId?.name || 'Unknown barber';\n    answer += `- ${time} | Customer: ${apt.customerName} | Barber: ${barberName}\\n`;\n  });\n}\n\nreturn [{\n  json: {\n    reply: answer,\n    actionTaken: isReminder ? 'sent_reminders' : 'listed_appointments'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "00b8d6ea-54c1-4255-a5d3-81b44276bc09",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.reply }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        832,
+        0
+      ],
+      "id": "14dee4bc-7a74-4e8a-8dca-4dc2afac87cb",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "64ee4968-d221-46ac-a464-6de74bf9a6db",
+  "meta": {
+    "instanceId": "b97eba850aae0a2254f6f8c23f02a562d685aa9352312c0a6977824cd0b8cdce"
+  },
+  "id": "TgdxxUOuF082lpjF",
+  "tags": []
+}
