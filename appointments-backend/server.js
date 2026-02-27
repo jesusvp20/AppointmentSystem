@@ -1,6 +1,7 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocs from './swagger.js';
 
@@ -10,6 +11,7 @@ import appointmentRoutes from './routes/appointment.routes.js';
 dotenv.config();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const { MONGO_URI, PORT } = process.env;

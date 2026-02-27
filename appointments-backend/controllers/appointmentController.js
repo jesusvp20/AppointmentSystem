@@ -8,14 +8,14 @@ export const createAppointment = async (req, res) => {
       appointment
     });
   } catch (error) {
-    // Send specific statuses from service
     const status = error.status || 500;
     return res.status(status).json({
       message: status === 500 ? 'Server error' : error.message,
-      ...(status === 500 && { error: error.message }) // Only send technical error log if 500
+      ...(status === 500 && { error: error.message }) 
     });
   }
 };
+
 
 export const getAppointments = async (req, res) => {
   try {

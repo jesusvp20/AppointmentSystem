@@ -17,7 +17,6 @@ export const paginate = async (model, query = {}, options = {}) => {
     queryBuilder = queryBuilder.populate(options.populate);
   }
 
-  // Optimize executing count and find in parallel
   const [data, totalItems] = await Promise.all([
     queryBuilder.skip(skip).limit(limit).exec(),
     model.countDocuments(query).exec()

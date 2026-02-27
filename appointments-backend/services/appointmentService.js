@@ -57,7 +57,7 @@ class AppointmentService {
             start: { $gte: startOfDay, $lte: endOfDay }
         });
 
-        // Loop overlaps
+        //looking for overlaps in the time slot 
         for (const apt of checkOverlaps) {
             const aptStart = new Date(apt.start);
             const aptEnd = new Date(aptStart.getTime() + apt.durationMin * 60000);
@@ -69,7 +69,6 @@ class AppointmentService {
             }
         }
 
-        // Create
         const newAppointment = new Appointment({
             customerName,
             customerPhone,
@@ -78,7 +77,7 @@ class AppointmentService {
             durationMin,
             status: 'scheduled'
         });
-
+     //validation if exists an exact time slot
         try {
             await newAppointment.save();
             await newAppointment.populate('barberId', 'name');
@@ -94,13 +93,14 @@ class AppointmentService {
         }
     }
 
+
+    //get appointments with pagination
     async getAppointmentsQuery(queryObj) {
         const { date, barberId, page, limit } = queryObj;
         const filter = { status: 'scheduled' };
 
         if (barberId) filter.barberId = barberId;
 
-        // Date range
         if (date) {
             const requestedDate = new Date(date);
             if (!isNaN(requestedDate.getTime())) {
@@ -120,6 +120,7 @@ class AppointmentService {
         });
     }
 
+    //cancel appointment
     async cancelAppointment(id) {
         const appointment = await Appointment.findByIdAndUpdate(
             id,
