@@ -37,6 +37,5 @@ mongoose.connect(MONGO_URI)
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Endpoints
 app.use('/api/barbers', barberRoutes);
 app.use('/api/appointments', appointmentRoutes);
